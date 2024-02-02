@@ -1,0 +1,50 @@
+---
+- name: Setup Consul Server Cluster
+  hosts: consul_servers
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - unzip
+        - gnupg
+
+    - name: Add HashiCorp GPG key and repository
+      apt_key:
+        url: "https://apt.releases.hashicorp.com/gpg"
+        state: present
+
+    - name: Add Consul APT repository
+      apt_repository:
+        repo: "deb https://apt.releases.hashicorp.com {{ ansible_distribution | lower }}-{{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Consul
+      apt:
+        name: consul
+        state: present
+
+    - name: Create Consul data directory
+      file:
+        path: "/opt/consul"
+        state: directory
+        owner: consul
+        group: consul
+
+    - name: Configure Consul
+      template:
+        src: "consul.hcl.j2"
+        dest: "/etc/consul.d/consul.hcl"
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart Consul
+
+  handlers:
+    - name: Restart Consul
+      service:
+        name: consul
+        state: restarted

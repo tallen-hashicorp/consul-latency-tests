@@ -1,0 +1,62 @@
+---
+- name: Setup Consul Agents and Nginx on Client Hosts
+  hosts: consul_clients
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - unzip
+        - gnupg
+
+    - name: Add HashiCorp GPG key and repository
+      apt_key:
+        url: "https://apt.releases.hashicorp.com/gpg"
+        state: present
+
+    - name: Add Consul APT repository
+      apt_repository:
+        repo: "deb https://apt.releases.hashicorp.com {{ ansible_distribution | lower }}-{{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Consul
+      apt:
+        name: consul
+        state: present
+
+    - name: Configure Consul Agent
+      template:
+        src: "consul_agent.hcl.j2"
+        dest: "/etc/consul.d/consul_agent.hcl"
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart Consul Agent
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Configure Nginx
+      template:
+        src: "nginx.conf.j2"
+        dest: "/etc/nginx/nginx.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart Nginx
+
+  handlers:
+    - name: Restart Consul Agent
+      service:
+        name: consul
+        state: restarted
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

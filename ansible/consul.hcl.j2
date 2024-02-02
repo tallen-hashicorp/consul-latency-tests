@@ -1,0 +1,11 @@
+datacenter = "dc1"
+data_dir   = "/opt/consul"
+
+bind_addr = "{{ ansible_default_ipv4.address }}"
+advertise_addr = "{{ ansible_default_ipv4.address }}"
+
+start_join = [
+  "{% for host in groups['consul_servers'] %}{{ hostvars[host].ansible_default_ipv4.address }}{% if not loop.last %},{% endif %}{% endfor %}"
+]
+
+client_addr = "0.0.0.0"
